@@ -1,4 +1,4 @@
-# Neighborhood Map  using [ServiceWorker][1], [Progressive Web Apps][2], [Google Maps API][3]
+# Restaurant Reviews App  using [ServiceWorker][1], [Progressive Web Apps][2], [Google Maps API][3]
 
 For the **Restaurant Reviews** projects, is a static webpage to a mobile-ready web application. A service worker added to begin the process of creating a seamless offline experience for your users.
 

@@ -1,7 +1,6 @@
-self.addEventListener('install', function(event){
-
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open('restaurant-review-v1').then(function(cache){
+    caches.open('restaurant-review-v1').then( cache => {
       return cache.addAll([
         '/',
         'js/main.js',
@@ -24,10 +23,9 @@ self.addEventListener('install', function(event){
   )
 });
 
-
-self.addEventListener('fetch', function(event) {
+self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(function(response){
+    caches.match(event.request).then( response =>{
       // Cache hit - return response
       if (response) {
           return response;

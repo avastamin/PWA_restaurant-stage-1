@@ -17,10 +17,10 @@ registerServiceWorker = () => {
 
   if (!navigator.serviceWorker) return;
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then(function(registration){
-        // Registration was successful
-      console.log('ServiceWorker registration successful with scope: ', registration.scope);
-    }).catch(function(err) {
+
+      navigator.serviceWorker.register('/sw.js').then( (registration) =>{
+          console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      }).catch( (err) => {
       // registration failed :(
       	console.log('ServiceWorker registration failed: ', err);
       });

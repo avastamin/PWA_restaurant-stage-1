@@ -9,19 +9,23 @@ class DBHelper {
    */
   static get DATABASE_URL() {
     const port = 8000 // Change this to your server port
-    return `http://localhost:${port}/data/restaurants.json`;
+     //return `http://localhost:${port}/data/restaurants.json`;
+    return "http://localhost:1337/restaurants";
   }
 
   /**
    * Fetch all restaurants.
    */
   static fetchRestaurants(callback) {
+
     let xhr = new XMLHttpRequest();
     xhr.open('GET', DBHelper.DATABASE_URL);
+
     xhr.onload = () => {
       if (xhr.status === 200) { // Got a success response from server!
-        const json = JSON.parse(xhr.responseText);
-        const restaurants = json.restaurants;
+        const restaurants = JSON.parse(xhr.responseText);
+        //const json = JSON.parse(xhr.responseText);
+        //const restaurants = json.restaurants;
         callback(null, restaurants);
       } else { // Oops!. Got an error from server.
         const error = (`Request failed. Returned status of ${xhr.status}`);
@@ -107,11 +111,17 @@ class DBHelper {
    * Fetch all neighborhoods with proper error handling.
    */
   static fetchNeighborhoods(callback) {
+
+    console.log('  DBHelper.openDatabase()',   DBHelper.openDatabase());
     // Fetch all restaurants
     DBHelper.fetchRestaurants((error, restaurants) => {
       if (error) {
         callback(error, null);
       } else {
+
+        // Call IDB database to save
+        DBHelper.openDatabase(restaurants)
+
         // Get all neighborhoods from all restaurants
         const neighborhoods = restaurants.map((v, i) => restaurants[i].neighborhood)
         // Remove duplicates from neighborhoods
@@ -119,6 +129,43 @@ class DBHelper {
         callback(null, uniqueNeighborhoods);
       }
     });
+  }
+
+  static openDatabase(restaurants) {
+    var idb = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
+
+    // If the browser doesn't support service worker,
+    // we don't care about having a database
+    if (!navigator.serviceWorker) {
+      return Promise.resolve();
+    }
+    // Open (or create) the database
+    var open = indexedDB.open("neighborhood", 1);
+
+    // Create the schema
+    open.onupgradeneeded = function() {
+        var db = open.result;
+        var store = db.createObjectStore("restaurants", {keyPath: "id"});
+        var index = store.createIndex("by-date", 'time');
+    };
+
+    open.onsuccess = function(messages) {
+        // Start a new transaction
+        var db = open.result;
+        var tx = db.transaction("restaurants", "readwrite");
+        var store = tx.objectStore("restaurants");
+        var index = store.index("by-date");
+
+        messages.forEach(function(message) {
+          console.log('restaurants message', message);
+          store.put(message);
+        });
+
+        // Close the db when the transaction is done
+        tx.oncomplete = function() {
+            db.close();
+        };
+    }
   }
 
   /**
@@ -149,7 +196,7 @@ class DBHelper {
    * Restaurant image URL.
    */
   static imageUrlForRestaurant(restaurant) {
-    return (`/img/${restaurant.photograph}`);
+    return (`/img/${restaurant.photograph}.jpg`);
   }
 
   /**

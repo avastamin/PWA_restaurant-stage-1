@@ -1,16 +1,22 @@
 let restaurants,
   neighborhoods,
   cuisines
+var DBPromise;
 var map
 var markers = []
+
+
 
 /**
  * Fetch neighborhoods and cuisines as soon as the page is loaded.
  */
 document.addEventListener('DOMContentLoaded', (event) => {
+
   fetchNeighborhoods();
   fetchCuisines();
   registerServiceWorker();
+  //openDatabase();
+  showCachedMessages();
 });
 
 registerServiceWorker = () => {
@@ -27,11 +33,79 @@ registerServiceWorker = () => {
     }
 }
 
+
+function openDatabase(messages) {
+  // If the browser doesn't support service worker,
+  // we don't care about having a database
+  if (!navigator.serviceWorker) {
+    return Promise.resolve();
+  }
+  // Open (or create) the database
+  var open = indexedDB.open("neighborhood", 1);
+
+  // Create the schema
+  open.onupgradeneeded = function() {
+      var db = open.result;
+      var store = db.createObjectStore("restaurants", {keyPath: "id"});
+      var index = store.createIndex("by-date", 'time');
+  };
+
+  var index = db.transaction('restaurants')
+        .objectStore('restaurants').index('by-date');
+      return index.getAll().then(function(messages){
+        indexController._postsView.addPosts(messages.reverse());
+      });
+
+  open.onsuccess = function(messages) {
+      // Start a new transaction
+      var db = open.result;
+      var tx = db.transaction("restaurants", "readwrite");
+      var store = tx.objectStore("restaurants");
+      var index = store.index("by-date");
+
+      messages.forEach(function(message) {
+        store.put(message);
+      });
+
+      // Close the db when the transaction is done
+      tx.oncomplete = function() {
+          db.close();
+      };
+  }
+}
+
+showCachedMessages =() => {
+  console.log('showCachedMessages DBPromise', DBPromise);
+  return DBPromise.then(function(db) {
+    console.log('DBPromise.then', db);
+    // if we're already showing posts, eg shift-refresh
+    // or the very first load, there's no point fetching
+    // posts from IDB
+    if (!db || indexController._postsView.showingPosts()) return;
+
+    // TODO: get all of the wittr message objects from indexeddb,
+    // then pass them to:
+    // indexController._postsView.addPosts(messages)
+    // in order of date, starting with the latest.
+    // Remember to return a promise that does all this,
+    // so the websocket isn't opened until you're done!
+    var index = db.transaction('wittrs')
+      .objectStore('wittrs').index('by-date');
+
+    return index.getAll().then(function(messages){
+      indexController._postsView.addPosts(messages.reverse());
+    });
+      console.log('index', index);
+  });
+};
 /**
  * Fetch all neighborhoods and set their HTML.
  */
 fetchNeighborhoods = () => {
+
+
   DBHelper.fetchNeighborhoods((error, neighborhoods) => {
+
     if (error) { // Got an error
       console.error(error);
     } else {
